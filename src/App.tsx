@@ -217,7 +217,7 @@ const Controller = () => {
             <Movable id="l_stick_area" isEditing={isEditing} pos={layout.l_stick_area} onDrag={(x, y) => updatePos('l_stick_area', x, y)} initialPos={{ bottom: 20, left: 240 }}>
                 <div className="flex flex-col items-center gap-2">
                     <PadButton label="Left stick" variant="small" onClick={() => sendControl('BTN_L3')} />
-                    <VirtualJoystick onMove={(x, y) => sendControl('L_STICK', { x, y })} />
+                    <VirtualJoystick isEditing={isEditing} onMove={(x, y) => sendControl('L_STICK', { x, y })} />
                 </div>
             </Movable>
 
@@ -252,7 +252,7 @@ const Controller = () => {
             <Movable id="r_stick_area" isEditing={isEditing} pos={layout.r_stick_area} onDrag={(x, y) => updatePos('r_stick_area', x, y)} initialPos={{ bottom: 20, right: 240 }}>
                 <div className="flex flex-col items-center gap-2">
                     <PadButton label="Right stick" variant="small" onClick={() => sendControl('BTN_R3')} />
-                    <VirtualJoystick onMove={(x, y) => sendControl('R_STICK', { x, y })} />
+                    <VirtualJoystick isEditing={isEditing} onMove={(x, y) => sendControl('R_STICK', { x, y })} />
                 </div>
             </Movable>
         </div>
@@ -280,6 +280,9 @@ const Movable = ({ children, isEditing, id, pos, onDrag, initialPos = { top: 0, 
     }}
   >
     {children}
+    {isEditing && (
+        <div className="absolute inset-0 bg-transparent z-[100]" />
+    )}
   </motion.div>
 );
 
@@ -306,22 +309,38 @@ const PadButton = ({ label, icon, size = 'default', variant = 'primary', onClick
   );
 };
 
-const VirtualJoystick = ({ onMove }: { onMove: (x: number, y: number) => void }) => {
+const VirtualJoystick = ({ onMove, isEditing }: { onMove: (x: number, y: number) => void, isEditing: boolean }) => {
+    const [pos, setPos] = useState({ x: 0, y: 0 });
+
     return (
         <div className="w-32 h-32 rounded-full bg-blue-950 relative flex items-center justify-center overflow-hidden border-4 border-blue-900 shadow-inner">
-             <div 
-                className="absolute inset-0 z-10"
-                onTouchMove={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const x = (e.touches[0].clientX - rect.left) / rect.width * 2 - 1;
-                    const y = (e.touches[0].clientY - rect.top) / rect.height * 2 - 1;
-                    onMove(x, y);
-                }}
-                onTouchEnd={() => onMove(0, 0)}
-             />
+             {!isEditing && (
+                <div 
+                    className="absolute inset-0 z-10"
+                    onTouchMove={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const rawX = (e.touches[0].clientX - rect.left) / rect.width * 2 - 1;
+                        const rawY = (e.touches[0].clientY - rect.top) / rect.height * 2 - 1;
+                        
+                        // Clamp and calculate visual offset
+                        const dist = Math.min(1, Math.sqrt(rawX * rawX + rawY * rawY));
+                        const angle = Math.atan2(rawY, rawX);
+                        const x = Math.cos(angle) * dist;
+                        const y = Math.sin(angle) * dist;
+
+                        setPos({ x: x * 40, y: y * 40 });
+                        onMove(x, y);
+                    }}
+                    onTouchEnd={() => {
+                        setPos({ x: 0, y: 0 });
+                        onMove(0, 0);
+                    }}
+                />
+             )}
              <motion.div 
                 className="w-16 h-16 rounded-full bg-sleek-text shadow-2xl pointer-events-none border-2 border-white/20"
-                animate={{ x: 0, y: 0 }}
+                animate={{ x: pos.x, y: pos.y }}
+                transition={{ type: 'spring', damping: 20, stiffness: 200 }}
              />
         </div>
     );
