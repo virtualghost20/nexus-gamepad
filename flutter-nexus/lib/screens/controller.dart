@@ -1,9 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/socket_service.dart';
 import '../widgets/joystick.dart';
 
@@ -15,191 +14,342 @@ class ControllerScreen extends StatefulWidget {
 }
 
 class _ControllerScreenState extends State<ControllerScreen> {
-  bool _isEditing = false;
-  Map<String, Offset> _layout = {};
+  bool isEditing = false;
+  Map<String, Offset> layoutPositions = {};
 
   @override
   void initState() {
     super.initState();
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
     _loadLayout();
   }
 
   Future<void> _loadLayout() async {
     final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getString('nexus_layout');
+    final String? saved = prefs.getString('nexus_flutter_layout_v2');
     if (saved != null) {
       final Map<String, dynamic> decoded = jsonDecode(saved);
       setState(() {
-        _layout = decoded.map((k, v) => MapEntry(k, Offset(v['x'], v['y'])));
+        layoutPositions = decoded.map((key, value) => 
+          MapEntry(key, Offset(value['x'].toDouble(), value['y'].toDouble()))
+        );
       });
     }
   }
 
   Future<void> _saveLayout() async {
     final prefs = await SharedPreferences.getInstance();
-    final encoded = _layout.map((k, v) => MapEntry(k, {'x': v.dx, 'y': v.dy}));
-    await prefs.setString('nexus_layout', jsonEncode(encoded));
-  }
-
-  @override
-  void dispose() {
-    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-    super.dispose();
+    final Map<String, dynamic> toSave = layoutPositions.map((key, value) => 
+      MapEntry(key, {'x': value.dx, 'y': value.dy})
+    );
+    await prefs.setString('nexus_flutter_layout_v2', jsonEncode(toSave));
   }
 
   @override
   Widget build(BuildContext context) {
-    final service = Provider.of<SocketService>(context);
+    final socket = Provider.of<SocketService>(context);
 
     return Scaffold(
-      body: Container(
-        padding: const EdgeInsets.all(16),
-        child: Stack(
-          children: [
-            // Top Bar
-            Positioned(
-              top: 0, left: 16, right: 16,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+      backgroundColor: const Color(0xFF0F1115),
+      body: Center(
+        child: AspectRatio(
+          aspectRatio: 16 / 9,
+          child: Container(
+            margin: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F1115),
+              borderRadius: BorderRadius.circular(50),
+              border: Border.all(color: const Color(0xFF334155), width: 12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.5),
+                  blurRadius: 40,
+                  spreadRadius: 10,
+                )
+              ],
+            ),
+            child: Stack(
+              children: [
+                // Header
+                Positioned(
+                  top: 30,
+                  left: 40,
+                  right: 40,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('NEXUS CONSOLE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.black, color: Colors.blueGrey)),
-                      Text('ROOM: ${service.room ?? "---"}', style: const TextStyle(fontSize: 12, fontFamily: 'Courier', color: Color(0xFF38BDF8))),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'NEXUS CONSOLE',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          Text(
+                            'ID: ${socket.roomCode ?? "DISCONNECTED"}',
+                            style: const TextStyle(
+                              color: Color(0xFF38BDF8),
+                              fontSize: 10,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              setState(() => isEditing = !isEditing);
+                              if (!isEditing) _saveLayout();
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: isEditing ? const Color(0xFF38BDF8) : Colors.white.withOpacity(0.05),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: isEditing ? const Color(0xFF38BDF8) : Colors.white.withOpacity(0.1),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    LucideIcons.settings,
+                                    size: 14,
+                                    color: isEditing ? Colors.black : Colors.white,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    isEditing ? 'SAVE LAYOUT' : 'CUSTOMIZE UI',
+                                    style: TextStyle(
+                                      color: isEditing ? Colors.black : Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Row(
+                              children: [
+                                Text('14MS', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                                SizedBox(width: 6),
+                                CircleAvatar(radius: 4, backgroundColor: Color(0xFF10B981)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
-                  Row(
+                ),
+
+                // Controls
+                _buildMovable(
+                  id: 'trig_left',
+                  initial: const Offset(40, 100),
+                  child: Column(
                     children: [
-                      TextButton.icon(
-                        onPressed: () {
-                          setState(() => _isEditing = !_isEditing);
-                          if (!_isEditing) _saveLayout();
-                        },
-                        icon: const Icon(LucideIcons.settings, size: 16),
-                        label: Text(_isEditing ? 'SAVE' : 'CUSTOMIZE'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: _isEditing ? Colors.black : Colors.blue,
-                          backgroundColor: _isEditing ? Colors.blue : Colors.white10,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                      _PadButton(label: 'LT', size: 90, onTap: () => socket.sendControl('BTN_LT')),
+                      const SizedBox(height: 20),
+                      _PadButton(label: 'LB', size: 60, onTap: () => socket.sendControl('BTN_LB')),
+                    ],
+                  ),
+                ),
+
+                _buildMovable(
+                  id: 'trig_right',
+                  initial: const Offset(740, 100),
+                  child: Column(
+                    children: [
+                      _PadButton(label: 'RT', size: 90, onTap: () => socket.sendControl('BTN_RT')),
+                      const SizedBox(height: 20),
+                      _PadButton(label: 'RB', size: 60, onTap: () => socket.sendControl('BTN_RB')),
+                    ],
+                  ),
+                ),
+
+                _buildMovable(
+                  id: 'dpad',
+                  initial: const Offset(80, 250),
+                  child: Container(
+                    width: 140,
+                    height: 140,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF2563EB),
+                      shape: BoxShape.circle,
+                      boxShadow: [BoxShadow(color: Colors.black45, blurRadius: 20)],
+                    ),
+                    child: Stack(
+                      children: [
+                        Center(child: Icon(LucideIcons.arrowUp, color: Colors.white.withOpacity(0.2), size: 100)),
+                        Positioned(top: 10, left: 0, right: 0, child: IconButton(icon: const Icon(LucideIcons.chevronUp, size: 40), onPressed: () => socket.sendControl('DPAD_UP'))),
+                        Positioned(bottom: 10, left: 0, right: 0, child: IconButton(icon: const Icon(LucideIcons.chevronDown, size: 40), onPressed: () => socket.sendControl('DPAD_DOWN'))),
+                        Positioned(left: 10, top: 0, bottom: 0, child: IconButton(icon: const Icon(LucideIcons.chevronLeft, size: 40), onPressed: () => socket.sendControl('DPAD_LEFT'))),
+                        Positioned(right: 10, top: 0, bottom: 0, child: IconButton(icon: const Icon(LucideIcons.chevronRight, size: 40), onPressed: () => socket.sendControl('DPAD_RIGHT'))),
+                      ],
+                    ),
+                  ),
+                ),
+
+                _buildMovable(
+                  id: 'l_stick',
+                  initial: const Offset(260, 250),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(color: const Color(0xFF2563EB), borderRadius: BorderRadius.circular(20)),
+                        child: const Text('LEFT STICK', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w900, italic: true)),
+                      ),
+                      const SizedBox(height: 12),
+                      JoystickWidget(
+                        onMove: (x, y) => socket.sendControl('L_STICK', {'x': x, 'y': y}),
+                      ),
+                    ],
+                  ),
+                ),
+
+                _buildMovable(
+                  id: 'r_stick',
+                  initial: const Offset(520, 250),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(color: const Color(0xFF2563EB), borderRadius: BorderRadius.circular(20)),
+                        child: const Text('RIGHT STICK', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w900, italic: true)),
+                      ),
+                      const SizedBox(height: 12),
+                      JoystickWidget(
+                        onMove: (x, y) => socket.sendControl('R_STICK', {'x': x, 'y': y}),
+                      ),
+                    ],
+                  ),
+                ),
+
+                _buildMovable(
+                  id: 'abxy',
+                  initial: const Offset(740, 250),
+                  child: SizedBox(
+                    width: 140,
+                    height: 140,
+                    child: Stack(
+                      children: [
+                        Positioned(top: 0, left: 45, child: _PadButton(label: 'Y', size: 50, onTap: () => socket.sendControl('BTN_Y'))),
+                        Positioned(bottom: 0, left: 45, child: _PadButton(label: 'A', size: 50, onTap: () => socket.sendControl('BTN_A'))),
+                        Positioned(left: 0, top: 45, child: _PadButton(label: 'X', size: 50, onTap: () => socket.sendControl('BTN_X'))),
+                        Positioned(right: 0, top: 45, child: _PadButton(label: 'B', size: 50, onTap: () => socket.sendControl('BTN_B'))),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Disconnect Label
+                Positioned(
+                  bottom: 30,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: TextButton(
+                      onPressed: () => socket.disconnect(),
+                      child: Text(
+                        'DISCONNECT LINK',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.4),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 4,
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      const Icon(LucideIcons.wifi, size: 12, color: Colors.green),
-                      const SizedBox(width: 4),
-                      const Text('LIVE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.green)),
-                    ],
+                    ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-
-            // Movable Elements
-            _buildMovable('dpad', 40, 40, _buildDPad(service)),
-            _buildMovable('left_stick', 200, 40, Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('L3', style: TextStyle(fontSize: 10, color: Colors.blueGrey)),
-                JoystickWidget(onMove: (x, y) => service.sendControl('L_STICK', {'x': x, 'y': y})),
-              ],
-            )),
-            _buildMovable('right_stick', 200, 400, Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('R3', style: TextStyle(fontSize: 10, color: Colors.blueGrey)),
-                JoystickWidget(onMove: (x, y) => service.sendControl('R_STICK', {'x': x, 'y': y})),
-              ],
-            ), isRight: true),
-            _buildMovable('abxy', 40, 40, _buildABXY(service), isRight: true),
-            _buildMovable('system', 20, MediaQuery.of(context).size.width / 2 - 80, _buildSystemButtons(service)),
-
-            if (_isEditing)
-              const Center(child: Text("DRAG ELEMENTS TO POSITION", style: TextStyle(color: Colors.white24, fontWeight: FontWeight.black, fontSize: 10))),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildMovable(String id, double top, double side, Widget child, {bool isRight = false}) {
-    final offset = _layout[id] ?? Offset.zero;
+  Widget _buildMovable({required String id, required Offset initial, required Widget child}) {
+    final Offset pos = layoutPositions[id] ?? initial;
+
     return Positioned(
-      top: top + offset.dy,
-      left: isRight ? null : side + offset.dx,
-      right: isRight ? side - offset.dx : null,
+      left: pos.dx,
+      top: pos.dy,
       child: GestureDetector(
-        onPanUpdate: _isEditing ? (details) {
+        onPanUpdate: isEditing ? (details) {
           setState(() {
-            _layout[id] = offset + details.delta;
+            layoutPositions[id] = pos + details.delta;
           });
         } : null,
         child: Container(
-          decoration: _isEditing ? BoxDecoration(
-            border: Border.all(color: Colors.blue, width: 2),
-            borderRadius: BorderRadius.circular(8),
-          ) : null,
-          child: child,
+          decoration: BoxDecoration(
+            border: isEditing ? Border.all(color: const Color(0xFF38BDF8), width: 2) : null,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: IgnorePointer(
+            ignoring: isEditing,
+            child: child,
+          ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildDPad(SocketService service) {
-    return Container(
-      width: 100, height: 100,
-      decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF1A1D23)),
-      child: Stack(
-        children: [
-          Align(alignment: Alignment.topCenter, child: IconButton(onPressed: () => service.sendControl('DPAD_UP'), icon: const Icon(LucideIcons.chevronUp))),
-          Align(alignment: Alignment.bottomCenter, child: IconButton(onPressed: () => service.sendControl('DPAD_DOWN'), icon: const Icon(LucideIcons.chevronDown))),
-          Align(alignment: Alignment.centerLeft, child: IconButton(onPressed: () => service.sendControl('DPAD_LEFT'), icon: const Icon(LucideIcons.chevronLeft))),
-          Align(alignment: Alignment.centerRight, child: IconButton(onPressed: () => service.sendControl('DPAD_RIGHT'), icon: const Icon(LucideIcons.chevronRight))),
-        ],
-      ),
-    );
-  }
+class _PadButton extends StatelessWidget {
+  final String label;
+  final double size;
+  final VoidCallback onTap;
 
-  Widget _buildABXY(SocketService service) {
-    return SizedBox(
-      width: 120, height: 120,
-      child: Stack(
-        children: [
-          _padBtn('Y', Alignment.topCenter, () => service.sendControl('BTN_Y')),
-          _padBtn('A', Alignment.bottomCenter, () => service.sendControl('BTN_A')),
-          _padBtn('X', Alignment.centerLeft, () => service.sendControl('BTN_X')),
-          _padBtn('B', Alignment.centerRight, () => service.sendControl('BTN_B')),
-        ],
-      ),
-    );
-  }
+  const _PadButton({required this.label, required this.size, required this.onTap});
 
-  Widget _padBtn(String label, Alignment align, VoidCallback tap) {
-    return Align(
-      alignment: align,
-      child: GestureDetector(
-        onTapDown: (_) => tap(),
-        child: Container(
-          width: 40, height: 40,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.blue.withOpacity(0.2), border: Border.all(color: Colors.blueGrey)),
-          child: Center(child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold))),
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => onTap(),
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: const Color(0xFF2563EB),
+          shape: BoxShape.circle,
+          border: const Border(bottom: BorderSide(color: Colors.black26, width: 6)),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF2563EB).withOpacity(0.3),
+              blurRadius: 10,
+              spreadRadius: 2,
+            )
+          ],
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
         ),
       ),
-    );
-  }
-
-  Widget _buildSystemButtons(SocketService service) {
-    return Row(
-      children: [
-        IconButton(onPressed: () => service.sendControl('BTN_VIEW'), icon: const Icon(LucideIcons.layoutTemplate)),
-        const SizedBox(width: 8),
-        IconButton(onPressed: () => service.sendControl('BTN_HOME'), icon: const Icon(LucideIcons.gamepad2, color: Colors.blue, size: 32)),
-        const SizedBox(width: 8),
-        IconButton(onPressed: () => service.sendControl('BTN_MENU'), icon: const Icon(LucideIcons.menu)),
-      ],
     );
   }
 }

@@ -1,3 +1,6 @@
+# This is a copy of pubspec.yaml created per your request for 'public.yaml'
+# In Flutter, the required file name is actually 'pubspec.yaml'. 
+
 name: nexus_remote
 description: A high-fidelity remote control system with customizable layouts and unlimited connectivity.
 version: 1.0.0+1
