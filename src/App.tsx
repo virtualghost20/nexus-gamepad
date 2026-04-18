@@ -78,15 +78,14 @@ const Controller = () => {
   const ws = useRef<WebSocket | null>(null);
 
   // Layout state: ID -> { x, y }
-  // Initial positions are roughly approximated from the static layout
   const [layout, setLayout] = useState<Record<string, { x: number; y: number }>>(() => {
-    const saved = localStorage.getItem('nexus_layout');
+    const saved = localStorage.getItem('nexus_layout_v2');
     return saved ? JSON.parse(saved) : {};
   });
 
   useEffect(() => {
     if (connected) {
-      localStorage.setItem('nexus_layout', JSON.stringify(layout));
+      localStorage.setItem('nexus_layout_v2', JSON.stringify(layout));
     }
   }, [layout, connected]);
 
@@ -118,7 +117,7 @@ const Controller = () => {
   };
 
   const sendControl = (action: string, payload: any = {}) => {
-    if (isEditing) return; // Don't send controls in edit mode
+    if (isEditing) return;
     if (ws.current?.readyState === WebSocket.OPEN) {
       ws.current.send(JSON.stringify({
         type: 'control',
@@ -129,33 +128,31 @@ const Controller = () => {
 
   if (!connected) {
     return (
-      <div className="min-h-screen bg-sleek-bg text-sleek-text flex flex-col items-center justify-center p-6">
+      <div className="min-h-screen bg-[#0F1115] text-white flex flex-col items-center justify-center p-6">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full max-w-sm">
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-12 h-12 bg-sleek-accent rounded-lg flex items-center justify-center text-sleek-bg font-black mb-4">NX</div>
-            <h2 className="text-3xl font-black uppercase italic flex items-center gap-3">
-              Pairing
-            </h2>
+          <div className="flex flex-col items-center mb-8 text-center">
+            <div className="w-16 h-16 bg-[#38BDF8] rounded-2xl flex items-center justify-center text-[#0F1115] font-black mb-4 shadow-[0_0_30px_rgba(56,189,248,0.3)]">NX</div>
+            <h2 className="text-3xl font-black uppercase tracking-tighter italic">Pairing Protocol</h2>
+            <p className="text-xs text-sleek-muted mt-2 font-sleek-mono uppercase">Establish WebSocket Handshake</p>
           </div>
           <div className="space-y-6">
             <div className="space-y-2">
-              <label className="text-[10px] uppercase font-bold text-sleek-muted tracking-widest text-blue-400">Entry Protocol: Room Code</label>
+              <label className="text-[10px] uppercase font-black text-sleek-muted tracking-[0.2em] block ml-1 text-[#38BDF8]">Nexus Room Identifier</label>
               <input 
                 value={room}
                 onChange={(e) => setRoom(e.target.value.toUpperCase())}
-                placeholder="000-000"
-                className="w-full bg-sleek-surface border border-sleek-border rounded-xl p-4 text-2xl font-sleek-mono text-sleek-accent focus:border-sleek-accent outline-none transition-all text-center tracking-widest"
+                placeholder="000000"
+                className="w-full bg-[#1A1D23] border border-white/5 rounded-2xl p-5 text-3xl font-sleek-mono text-[#38BDF8] focus:border-[#38BDF8]/50 focus:ring-4 focus:ring-[#38BDF8]/10 outline-none transition-all text-center tracking-[0.3em] placeholder:opacity-20 shadow-inner"
                 maxLength={6}
               />
             </div>
             <button 
               onClick={() => connect(room)}
               disabled={!room}
-              className="w-full bg-sleek-accent text-sleek-bg hover:opacity-90 disabled:opacity-30 py-4 rounded-xl font-black uppercase tracking-widest transition-all shadow-[0_4px_15px_rgba(56,189,248,0.3)]"
+              className="w-full bg-[#38BDF8] text-[#0F1115] hover:brightness-110 disabled:grayscale py-5 rounded-2xl font-black uppercase tracking-[0.15em] transition-all shadow-[0_10px_25px_rgba(56,189,248,0.2)] active:scale-[0.98]"
             >
-              Initialize Pairing
+              Initialize Link
             </button>
-            {error && <p className="text-red-500 text-sm italic text-center">{error}</p>}
           </div>
         </motion.div>
       </div>
@@ -163,65 +160,65 @@ const Controller = () => {
   }
 
   return (
-    <div className="min-h-screen bg-sleek-bg text-sleek-text flex flex-col items-center justify-center p-6 touch-none select-none">
-      {/* Landscape Phone Frame */}
-      <div className="w-[900px] h-[500px] bg-black border-[14px] border-sleek-border rounded-[60px] relative p-8 shadow-2xl flex flex-col overflow-hidden">
+    <div className="min-h-screen bg-[#0F1115] text-white flex flex-col items-center justify-center p-4 touch-none select-none overflow-hidden">
+      {/* Landscape Frame - Matches Image Border Style */}
+      <div className="w-[940px] h-[520px] bg-[#0F1115] border-[14px] border-[#334155] rounded-[60px] relative shadow-2xl flex flex-col p-10 overflow-hidden">
         
-        {/* Top Indicators */}
-        <div className="flex justify-between items-center absolute top-6 left-12 right-12 z-50">
-          <div className="flex flex-col">
-            <h2 className="text-[10px] font-black text-sleek-muted uppercase">Nexus Console</h2>
-            <p className="text-[8px] font-sleek-mono text-sleek-accent uppercase">ID: {room}</p>
+        {/* Top Header Section */}
+        <div className="flex justify-between items-start absolute top-10 left-12 right-12 z-50">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-[14px] font-black tracking-tight uppercase leading-none">Nexus Console</h2>
+            <p className="text-[10px] font-sleek-mono text-white/60 uppercase leading-none">ID: {room}</p>
           </div>
           <div className="flex gap-4 items-center">
             <button 
               onClick={() => setIsEditing(!isEditing)}
-              className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-2 ${isEditing ? 'bg-sleek-accent text-sleek-bg shadow-[0_0_15px_#38BDF8]' : 'bg-white/5 text-sleek-muted border border-white/5'}`}
+              className={`px-5 py-2.5 rounded-full text-[11px] font-black uppercase tracking-widest transition-all flex items-center gap-2.5 backdrop-blur-md border ${isEditing ? 'bg-[#38BDF8] text-[#0F1115] border-[#38BDF8]' : 'bg-white/5 text-white/80 border-white/10'}`}
             >
-              <Settings className="w-3 h-3" /> {isEditing ? 'Save Layout' : 'Customize UI'}
+              <Settings className="w-3.5 h-3.5" /> {isEditing ? 'Save Layout' : 'Customize UI'}
             </button>
-            <div className="flex items-center gap-2 text-sleek-success text-[10px] font-black uppercase">
-               14ms <div className="w-2 h-2 rounded-full bg-sleek-success animate-pulse" />
+            <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-full border border-white/5">
+                <span className="text-[11px] font-black text-white px-1">14ms</span>
+                <div className="w-2.5 h-2.5 rounded-full bg-[#10B981] shadow-[0_0_10px_#10B981]" />
             </div>
           </div>
         </div>
 
-        {/* Workspace for Dragging */}
-        <div className="flex-1 relative mt-12">
-            {/* Editing Overlay */}
+        {/* Workspace Layout */}
+        <div className="flex-1 relative">
             {isEditing && (
-                <div className="absolute inset-0 z-40 bg-blue-500/5 pointer-events-none rounded-3xl border-2 border-dashed border-sleek-accent/20 flex items-center justify-center">
-                    <span className="text-sleek-accent font-black uppercase text-[10px] tracking-widest opacity-40">Drag elements to reposition</span>
-                </div>
+                <div className="absolute inset-0 z-40 bg-[#38BDF8]/5 pointer-events-none rounded-[40px] border-2 border-dashed border-[#38BDF8]/20" />
             )}
 
-            {/* LT & LB */}
-            <Movable id="trig_left" isEditing={isEditing} pos={layout.trig_left} onDrag={(x, y) => updatePos('trig_left', x, y)}>
-                <div className="flex flex-col gap-4">
+            {/* Triggers Group - Left */}
+            <Movable id="trig_left" isEditing={isEditing} pos={layout.trig_left} onDrag={(x, y) => updatePos('trig_left', x, y)} initialPos={{ top: 20, left: 20 }}>
+                <div className="flex flex-col gap-6">
                     <PadButton label="LT" size="large" onClick={() => sendControl('BTN_LT')} />
-                    <PadButton label="LB" variant="secondary" onClick={() => sendControl('BTN_LB')} />
+                    <PadButton label="LB" size="medium" onClick={() => sendControl('BTN_LB')} />
                 </div>
             </Movable>
 
-            {/* D-Pad */}
-            <Movable id="dpad" isEditing={isEditing} pos={layout.dpad} onDrag={(x, y) => updatePos('dpad', x, y)} initialPos={{ bottom: 20, left: 40 }}>
-                <div className="relative w-32 h-32 bg-blue-900 rounded-full flex items-center justify-center border-4 border-blue-800 shadow-2xl">
-                    <button onTouchStart={() => sendControl('DPAD_UP')} className="absolute top-2 text-white hover:text-sleek-accent"><ChevronUp className="w-8 h-8" /></button>
-                    <button onTouchStart={() => sendControl('DPAD_DOWN')} className="absolute bottom-2 text-white hover:text-sleek-accent"><ChevronDown className="w-8 h-8" /></button>
-                    <button onTouchStart={() => sendControl('DPAD_LEFT')} className="absolute left-2 text-white hover:text-sleek-accent"><ChevronLeft className="w-8 h-8" /></button>
-                    <button onTouchStart={() => sendControl('DPAD_RIGHT')} className="absolute right-2 text-white hover:text-sleek-accent"><ChevronRight className="w-8 h-8" /></button>
+            {/* D-Pad - Bottom Left */}
+            <Movable id="dpad" isEditing={isEditing} pos={layout.dpad} onDrag={(x, y) => updatePos('dpad', x, y)} initialPos={{ bottom: -20, left: 60 }}>
+                <div className="relative w-36 h-36 bg-[#2563EB] rounded-full flex items-center justify-center border-4 border-[#1E40AF] shadow-[0_15px_30px_rgba(0,0,0,0.4)]">
+                    <button onTouchStart={() => sendControl('DPAD_UP')} className="absolute top-2.5 text-white active:scale-110 transition-transform"><ChevronUp className="w-10 h-10" /></button>
+                    <button onTouchStart={() => sendControl('DPAD_DOWN')} className="absolute bottom-2.5 text-white active:scale-110 transition-transform"><ChevronDown className="w-10 h-10" /></button>
+                    <button onTouchStart={() => sendControl('DPAD_LEFT')} className="absolute left-2.5 text-white active:scale-110 transition-transform"><ChevronLeft className="w-10 h-10" /></button>
+                    <button onTouchStart={() => sendControl('DPAD_RIGHT')} className="absolute right-2.5 text-white active:scale-110 transition-transform"><ChevronRight className="w-10 h-10" /></button>
                 </div>
             </Movable>
 
-            {/* Left Joystick */}
-            <Movable id="l_stick_area" isEditing={isEditing} pos={layout.l_stick_area} onDrag={(x, y) => updatePos('l_stick_area', x, y)} initialPos={{ bottom: 20, left: 240 }}>
-                <div className="flex flex-col items-center gap-2">
-                    <PadButton label="Left stick" variant="small" onClick={() => sendControl('BTN_L3')} />
+            {/* Left Joystick - Center Left */}
+            <Movable id="l_stick_area" isEditing={isEditing} pos={layout.l_stick_area} onDrag={(x, y) => updatePos('l_stick_area', x, y)} initialPos={{ bottom: -20, left: 260 }}>
+                <div className="flex flex-col items-center gap-3">
+                    <div className="px-4 py-1.5 bg-[#2563EB] rounded-full border border-white/20">
+                        <span className="text-[10px] font-black text-white uppercase tracking-tighter italic">Left Stick</span>
+                    </div>
                     <VirtualJoystick isEditing={isEditing} onMove={(x, y) => sendControl('L_STICK', { x, y })} />
                 </div>
             </Movable>
 
-            {/* Center Buttons */}
+            {/* System Hub - Center Top */}
             <Movable id="system_buttons" isEditing={isEditing} pos={layout.system_buttons} onDrag={(x, y) => updatePos('system_buttons', x, y)} initialPos={{ top: 20, left: '42%' }}>
                 <div className="flex gap-4">
                     <PadButton icon={<LayoutTemplate className="w-5 h-5" />} variant="system" onClick={() => sendControl('BTN_VIEW')} />
@@ -230,34 +227,39 @@ const Controller = () => {
                 </div>
             </Movable>
 
-            {/* RT & RB */}
-            <Movable id="trig_right" isEditing={isEditing} pos={layout.trig_right} onDrag={(x, y) => updatePos('trig_right', x, y)} initialPos={{ top: 0, right: 0 }}>
-                <div className="flex flex-col gap-4 items-end">
+            {/* Triggers Group - Right */}
+            <Movable id="trig_right" isEditing={isEditing} pos={layout.trig_right} onDrag={(x, y) => updatePos('trig_right', x, y)} initialPos={{ top: 20, right: 20 }}>
+                <div className="flex flex-col gap-6 items-end">
                     <PadButton label="RT" size="large" onClick={() => sendControl('BTN_RT')} />
-                    <PadButton label="RB" variant="secondary" onClick={() => sendControl('BTN_RB')} />
+                    <PadButton label="RB" size="medium" onClick={() => sendControl('BTN_RB')} />
                 </div>
             </Movable>
 
-            {/* ABXY */}
-            <Movable id="abxy" isEditing={isEditing} pos={layout.abxy} onDrag={(x, y) => updatePos('abxy', x, y)} initialPos={{ bottom: 20, right: 40 }}>
-                <div className="relative w-32 h-32 flex items-center justify-center">
-                    <button onTouchStart={() => sendControl('BTN_Y')} className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-10 bg-blue-900 border-2 border-blue-500/30 rounded-full font-black text-white shadow-lg active:bg-sleek-accent">Y</button>
-                    <button onTouchStart={() => sendControl('BTN_A')} className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-10 bg-blue-900 border-2 border-blue-500/30 rounded-full font-black text-white shadow-lg active:bg-sleek-accent">A</button>
-                    <button onTouchStart={() => sendControl('BTN_X')} className="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 bg-blue-900 border-2 border-blue-500/30 rounded-full font-black text-white shadow-lg active:bg-sleek-accent">X</button>
-                    <button onTouchStart={() => sendControl('BTN_B')} className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 bg-blue-900 border-2 border-blue-500/30 rounded-full font-black text-white shadow-lg active:bg-sleek-accent">B</button>
+            {/* ABXY Diamond - Bottom Right */}
+            <Movable id="abxy" isEditing={isEditing} pos={layout.abxy} onDrag={(x, y) => updatePos('abxy', x, y)} initialPos={{ bottom: -20, right: 60 }}>
+                <div className="relative w-36 h-36 flex items-center justify-center">
+                    <div className="relative w-full h-full">
+                        <button onTouchStart={() => sendControl('BTN_Y')} className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-12 bg-[#2563EB] border-b-4 border-black/30 rounded-full font-black text-white shadow-xl active:scale-90 transition-transform">Y</button>
+                        <button onTouchStart={() => sendControl('BTN_A')} className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-12 bg-[#2563EB] border-b-4 border-black/30 rounded-full font-black text-white shadow-xl active:scale-90 transition-transform">A</button>
+                        <button onTouchStart={() => sendControl('BTN_X')} className="absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-[#2563EB] border-b-4 border-black/30 rounded-full font-black text-white shadow-xl active:scale-90 transition-transform">X</button>
+                        <button onTouchStart={() => sendControl('BTN_B')} className="absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-[#2563EB] border-b-4 border-black/30 rounded-full font-black text-white shadow-xl active:scale-90 transition-transform">B</button>
+                    </div>
                 </div>
             </Movable>
 
-            {/* Right Joystick */}
-            <Movable id="r_stick_area" isEditing={isEditing} pos={layout.r_stick_area} onDrag={(x, y) => updatePos('r_stick_area', x, y)} initialPos={{ bottom: 20, right: 240 }}>
-                <div className="flex flex-col items-center gap-2">
-                    <PadButton label="Right stick" variant="small" onClick={() => sendControl('BTN_R3')} />
+            {/* Right Joystick - Center Right */}
+            <Movable id="r_stick_area" isEditing={isEditing} pos={layout.r_stick_area} onDrag={(x, y) => updatePos('r_stick_area', x, y)} initialPos={{ bottom: -20, right: 260 }}>
+                <div className="flex flex-col items-center gap-3">
+                    <div className="px-4 py-1.5 bg-[#2563EB] rounded-full border border-white/20">
+                        <span className="text-[10px] font-black text-white uppercase tracking-tighter italic">Right Stick</span>
+                    </div>
                     <VirtualJoystick isEditing={isEditing} onMove={(x, y) => sendControl('R_STICK', { x, y })} />
                 </div>
             </Movable>
         </div>
 
-        <button onClick={() => window.location.reload()} className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[8px] text-sleek-muted uppercase font-black tracking-widest hover:text-white transition-colors z-50">Disconnect Link</button>
+        {/* Footer Text */}
+        <button onClick={() => window.location.reload()} className="absolute bottom-8 left-1/2 -translate-x-1/2 text-[11px] text-white/40 uppercase font-black tracking-[0.3em] hover:text-[#38BDF8] transition-colors z-50">Disconnect Link</button>
       </div>
     </div>
   );
@@ -272,34 +274,38 @@ const Movable = ({ children, isEditing, id, pos, onDrag, initialPos = { top: 0, 
         const newY = (pos?.y || 0) + info.offset.y;
         onDrag(newX, newY);
     }}
-    className={`absolute ${isEditing ? 'cursor-move ring-2 ring-sleek-accent ring-offset-4 ring-offset-black z-50 rounded-lg' : ''}`}
+    className={`absolute ${isEditing ? 'cursor-move ring-4 ring-[#38BDF8] ring-offset-4 ring-offset-[#0F1115] z-[100] rounded-2xl shadow-[0_0_50px_rgba(56,189,248,0.2)]' : 'z-10'}`}
     style={{ 
-        ...initialPos,
+        top: initialPos.top ?? 'auto',
+        left: initialPos.left ?? 'auto',
+        right: initialPos.right ?? 'auto',
+        bottom: initialPos.bottom ?? 'auto',
         x: pos?.x || 0,
         y: pos?.y || 0
     }}
   >
     {children}
     {isEditing && (
-        <div className="absolute inset-0 bg-transparent z-[100]" />
+        <div className="absolute inset-0 bg-transparent z-[101]" />
     )}
   </motion.div>
 );
 
 const PadButton = ({ label, icon, size = 'default', variant = 'primary', onClick }: any) => {
-  const baseClasses = "rounded-full flex items-center justify-center font-black text-white active:scale-95 transition-all shadow-xl select-none uppercase italic tracking-tighter";
-  let sizeClasses = "w-12 h-12 text-sm";
-  let variantClasses = "bg-blue-900 border-2 border-blue-500/30 hover:border-sleek-accent";
+  const baseClasses = "rounded-full flex items-center justify-center font-black text-white active:scale-95 transition-all shadow-xl select-none uppercase italic tracking-tighter border-b-4 border-black/20";
+  let sizeClasses = "w-14 h-14 text-base";
+  let variantClasses = "bg-[#2563EB] hover:bg-[#3B82F6]";
 
   if (size === 'large') {
-    sizeClasses = "w-20 h-20 text-xl border-4 border-blue-700 active:bg-sleek-accent";
-  } else if (variant === 'small') {
-    sizeClasses = "w-auto px-4 py-2 text-[8px] rounded-full border-none opacity-60";
+    sizeClasses = "w-24 h-24 text-2xl border-b-8";
+  } else if (size === 'medium') {
+    sizeClasses = "w-16 h-16 text-lg";
   } else if (variant === 'system') {
-    sizeClasses = "w-10 h-10 border-blue-800/50 bg-blue-950";
+    sizeClasses = "w-11 h-11 border-b-2";
+    variantClasses = "bg-[#1E3A8A] hover:bg-[#1E40AF]";
   } else if (variant === 'home') {
-    sizeClasses = "w-14 h-14 bg-sleek-accent text-sleek-bg border-4 border-sleek-bg shadow-[0_0_15px_rgba(56,189,248,0.5)]";
-    variantClasses = ""; // override
+    sizeClasses = "w-16 h-16 bg-[#38BDF8] text-[#0F1115] border-b-4 border-white/20 shadow-[0_0_20px_rgba(56,189,248,0.4)] hover:brightness-110";
+    variantClasses = ""; 
   }
 
   return (
@@ -313,7 +319,10 @@ const VirtualJoystick = ({ onMove, isEditing }: { onMove: (x: number, y: number)
     const [pos, setPos] = useState({ x: 0, y: 0 });
 
     return (
-        <div className="w-32 h-32 rounded-full bg-blue-950 relative flex items-center justify-center overflow-hidden border-4 border-blue-900 shadow-inner">
+        <div className="w-36 h-36 rounded-full bg-[#1E3A8A]/30 relative flex items-center justify-center overflow-hidden border-[6px] border-[#2563EB] shadow-inner">
+             {/* Center Glow Overlay */}
+             <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+             
              {!isEditing && (
                 <div 
                     className="absolute inset-0 z-10"
@@ -321,14 +330,11 @@ const VirtualJoystick = ({ onMove, isEditing }: { onMove: (x: number, y: number)
                         const rect = e.currentTarget.getBoundingClientRect();
                         const rawX = (e.touches[0].clientX - rect.left) / rect.width * 2 - 1;
                         const rawY = (e.touches[0].clientY - rect.top) / rect.height * 2 - 1;
-                        
-                        // Clamp and calculate visual offset
                         const dist = Math.min(1, Math.sqrt(rawX * rawX + rawY * rawY));
                         const angle = Math.atan2(rawY, rawX);
                         const x = Math.cos(angle) * dist;
                         const y = Math.sin(angle) * dist;
-
-                        setPos({ x: x * 40, y: y * 40 });
+                        setPos({ x: x * 45, y: y * 45 });
                         onMove(x, y);
                     }}
                     onTouchEnd={() => {
@@ -338,13 +344,17 @@ const VirtualJoystick = ({ onMove, isEditing }: { onMove: (x: number, y: number)
                 />
              )}
              <motion.div 
-                className="w-16 h-16 rounded-full bg-sleek-text shadow-2xl pointer-events-none border-2 border-white/20"
+                className="w-20 h-20 rounded-full bg-white shadow-[0_10px_30px_rgba(0,0,0,0.5)] pointer-events-none border-4 border-[#38BDF8]/20 flex items-center justify-center"
                 animate={{ x: pos.x, y: pos.y }}
-                transition={{ type: 'spring', damping: 20, stiffness: 200 }}
-             />
+                transition={{ type: 'spring', damping: 25, stiffness: 250 }}
+             >
+                 {/* Internal joystick detail */}
+                 <div className="w-4 h-4 rounded-full bg-[#38BDF8]/10" />
+             </motion.div>
         </div>
     );
 }
+
 
 // --- Receiver Application ---
 const Receiver = () => {
