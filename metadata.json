@@ -1,0 +1,6 @@
+{
+  "name": "Nexus Remote",
+  "description": "A high-performance remote control system with persistent WebSocket connectivity and room-based pairing.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
